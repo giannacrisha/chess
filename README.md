@@ -5,6 +5,8 @@ A browser chess game. Royal, gold, and sculpted — built to match the look of
 
 **By giannacrisha.**
 
+**Play it now: <https://gichess.giannacrisha-ee3.workers.dev>**
+
 Three ways to play:
 
 1. **Hot-seat** — two people, one screen, taking turns.

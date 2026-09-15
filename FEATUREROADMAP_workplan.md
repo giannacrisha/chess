@@ -52,7 +52,7 @@ correct game of chess on one screen.*
 
 ### 1a. Scaffolding
 
-- [ ] **T1.1 — Project skeleton**
+- [x] **T1.1 — Project skeleton**
   - Depends on: T0.3
   - Files: `package.json`, `wrangler.jsonc`, `public/index.html`
   - What: the Cloudflare settings file (name `gichess`, today's
@@ -65,7 +65,7 @@ correct game of chess on one screen.*
 
 ### 1b. The rules — the heart of the project
 
-- [ ] **T1.2 — Board representation and piece movement**
+- [x] **T1.2 — Board representation and piece movement**
   - Depends on: T1.1
   - Files: `public/js/rules.js`
   - What: the 0x88 board, `newGame()`, FEN in and out, and pseudo-legal move
@@ -75,7 +75,7 @@ correct game of chess on one screen.*
     a position loaded from FEN and written back out returns the identical FEN
     string.
 
-- [ ] **T1.3 — Legality, castling, en passant, promotion**
+- [x] **T1.3 — Legality, castling, en passant, promotion**
   - Depends on: T1.2
   - Files: `public/js/rules.js`
   - What: filter out moves that leave your own king attacked; castling with all
@@ -87,7 +87,7 @@ correct game of chess on one screen.*
     capture is offered on the move after a double pawn push and not the move
     after that.
 
-- [ ] 🔒 **T1.4 — The proof: move-counting test**
+- [x] 🔒 **T1.4 — The proof: move-counting test**
   - Depends on: T1.3
   - Files: `test/perft.test.js`, `package.json`
   - What: count every legal move sequence to a given depth and compare against
@@ -101,7 +101,7 @@ correct game of chess on one screen.*
   - **GATE. Nothing below this line begins until this test is green.**
     If it fails, the only work permitted is fixing `rules.js`.
 
-- [ ] **T1.5 — Game status**
+- [x] **T1.5 — Game status**
   - Depends on: T1.4
   - Files: `public/js/rules.js`, `test/perft.test.js`
   - What: `status()` returning `playing`, `check`, `checkmate` or `stalemate`.
@@ -111,7 +111,7 @@ correct game of chess on one screen.*
 
 ### 1c. The look
 
-- [ ] **T1.6 — Design system**
+- [x] **T1.6 — Design system**
   - Depends on: T1.1 *(may run in parallel with 1b)*
   - Files: `public/css/gichess.css`, `public/index.html`
   - What: every token from ProductSpec §2 as CSS custom properties, in both
@@ -121,7 +121,7 @@ correct game of chess on one screen.*
     ground, switching correctly between light and dark with the system setting
     and with the toggle, with no flash of the wrong theme on load.
 
-- [ ] **T1.7 — The gold pieces**
+- [x] **T1.7 — The gold pieces**
   - Depends on: T1.6
   - Files: `public/js/pieces.js`, `public/css/gichess.css`
   - What: twelve SVG pieces — six shapes in two finishes — built in the four
@@ -132,7 +132,7 @@ correct game of chess on one screen.*
     light and dark squares, and they read as sculpted metal rather than flat
     silhouettes.
 
-- [ ] **T1.8 — Board rendering**
+- [x] **T1.8 — Board rendering**
   - Depends on: T1.7, T1.5
   - Files: `public/js/board.js`, `public/css/gichess.css`
   - What: draw an 8×8 board from a position, with file and rank labels, and a
@@ -141,7 +141,7 @@ correct game of chess on one screen.*
     visible from 360px wide up to a large desktop screen; it never scrolls
     sideways.
 
-- [ ] **T1.9 — Making moves, and the impossibility of illegal ones**
+- [x] **T1.9 — Making moves, and the impossibility of illegal ones**
   - Depends on: T1.8
   - Files: `public/js/board.js`
   - What: select a piece with a click or by dragging; its legal destinations
@@ -153,7 +153,7 @@ correct game of chess on one screen.*
     and confirming that only legal destinations are accepted. Pieces of the
     colour not to move cannot be picked up at all.
 
-- [ ] **T1.10 — Promotion chooser**
+- [x] **T1.10 — Promotion chooser**
   - Depends on: T1.9
   - Files: `public/js/board.js`, `public/css/gichess.css`
   - What: on reaching the last rank, a panel of four gold pieces; the move
@@ -164,7 +164,7 @@ correct game of chess on one screen.*
 
 ### 1d. The first mode, and the first deploy
 
-- [ ] **T1.11 — Hot-seat**
+- [x] **T1.11 — Hot-seat**
   - Depends on: T1.10
   - Files: `public/js/app.js`, `public/index.html`
   - What: the menu, the hot-seat mode itself, the status line with every message
@@ -174,7 +174,7 @@ correct game of chess on one screen.*
     with correct status text throughout; a stalemate is announced as a draw; New
     game restores the starting position.
 
-- [ ] **T1.12 — Live on the internet** 🎉
+- [x] **T1.12 — Live on the internet** 🎉
   - Depends on: T1.11
   - Files: `wrangler.jsonc`, `README.md`
   - What: `npm run deploy`, then play a real game against another person through
@@ -182,6 +182,7 @@ correct game of chess on one screen.*
   - Done when: a `https://gichess.*.workers.dev` address exists, a stranger with
     the link can play a full game on a phone without instructions, and the
     address is written into the README.
+  - **Live at <https://gichess.giannacrisha-ee3.workers.dev>**
   - **Phase 1 ships here. Everything after this is addition, not repair.**
 
 ---
