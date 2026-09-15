@@ -87,6 +87,9 @@ export class Board {
       const onLeftColumn = index % 8 === 0;
       el.dataset.file = onBottomRow ? 'abcdefgh'[fileOf(sq)] : '';
       el.dataset.rank = onLeftColumn ? String(rankOf(sq) + 1) : '';
+      // Force render() to rebuild this square's contents: the piece on it may
+      // be unchanged, but which coordinates it carries has just moved.
+      delete el.dataset.value;
 
       this.el.appendChild(el);
     }

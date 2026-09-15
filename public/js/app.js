@@ -176,6 +176,7 @@ function startGame(mode, options = {}) {
   game.lastMove = null;
   game.resigned = null;
   game.thinking = false;
+  game.token = Symbol('game');
   game.online = null;
   game.playerColour = options.colour ?? Rules.WHITE;
   game.resignable = mode !== null;
@@ -192,6 +193,7 @@ function startGame(mode, options = {}) {
 }
 
 function toMenu() {
+  game.token = Symbol('menu');
   game.online?.close?.();
   game.online = null;
   game.mode = null;
@@ -215,13 +217,43 @@ function resign() {
 }
 
 /* ------------------------------------------------------------------ *
- * Filled in by later phases
+ * The computer's turn
  * ------------------------------------------------------------------ */
 
-let engine = null;     // the computer opponent
-let sound = null;      // move sounds
+let engine = null;     // loaded the first time someone plays the computer
+let sound = null;      // move sounds — Phase 4
 
-async function takeComputerTurn() { /* wired up in Phase 2 */ }
+/** How long to pause before the computer moves, so it feels considered. */
+const THINKING_PAUSE = 340;
+
+async function takeComputerTurn() {
+  if (game.mode !== 'computer' || isOver()) return;
+  if (!engine) engine = await import('./engine.js');
+
+  // Remember which game this is, so a reply cannot land in a game that has
+  // since been reset or abandoned for the menu.
+  const token = (game.token = Symbol('turn'));
+
+  game.thinking = true;
+  refresh({ animate: false });
+
+  const started = Date.now();
+  const result = engine.search(game.position, { depth: 2 });
+  const elapsed = Date.now() - started;
+  if (elapsed < THINKING_PAUSE) {
+    await new Promise((done) => setTimeout(done, THINKING_PAUSE - elapsed));
+  }
+
+  if (game.token !== token) return;        // the game moved on without us
+  game.thinking = false;
+  if (!result) { refresh(); return; }      // no moves: the game is already over
+
+  game.position = Rules.makeMove(game.position, result.move);
+  game.lastMove = result.move;
+  sound?.forMove(result.move, game.position);
+  refresh();
+}
+
 function updateTrays() { /* wired up in Phase 4 */ }
 
 /* ------------------------------------------------------------------ *
