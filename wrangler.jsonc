@@ -1,0 +1,39 @@
+{
+  // gichess — Cloudflare Workers settings.
+  // See README.md for what each of these words means.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gichess",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-15",
+
+  // Send us the logs, so we can see what happened when something breaks.
+  "observability": {
+    "enabled": true
+  },
+
+  // Everything in public/ is handed straight to the browser by Cloudflare.
+  //
+  // "single-page-application": whatever address someone asks for, serve
+  //   index.html and let the page sort itself out.
+  // "run_worker_first": ONLY the WebSocket path runs our code. Every other
+  //   request — the page, the stylesheet, the scripts — is served straight
+  //   from Cloudflare's edge without our Worker waking up at all.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/ws/*"]
+  },
+
+  // One Room per room code: a single object, existing once in the world,
+  // with its own small database attached.
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOM", "class_name": "Room" }
+    ]
+  },
+
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room"] }
+  ]
+}
