@@ -9,6 +9,7 @@
 
 import * as Rules from './rules.js';
 import { Board } from './board.js';
+import { pieceSVG } from './pieces.js';
 
 /* ------------------------------------------------------------------ *
  * The bits of the page we talk to
@@ -143,6 +144,7 @@ function refresh({ animate = true } = {}) {
   board.setFrozen(isOver() || game.thinking);
 
   ui.resign.hidden = !game.resignable || isOver();
+  ui.soundToggle.hidden = game.mode === null;
   updateTrays();
 }
 
@@ -168,9 +170,10 @@ function play(from, to, promotion) {
 function onPersonMoved(from, to, promotion) {
   if (game.mode === 'online') { game.online.sendMove(from, to, promotion); return; }
 
+  const before = game.position;
   const move = play(from, to, promotion);
   if (!move) return;
-  sound?.forMove(move, game.position);
+  announce(before, game.position);
   refresh();
 
   if (game.mode === 'computer' && !isOver()) takeComputerTurn();
@@ -234,7 +237,7 @@ function resign() {
  * ------------------------------------------------------------------ */
 
 let engine = null;     // loaded the first time someone plays the computer
-let sound = null;      // move sounds — Phase 4
+let sound = null;      // loaded on the first click, which is also when browsers allow audio
 
 /** How long to pause before the computer moves, so it feels considered. */
 const THINKING_PAUSE = 340;
@@ -261,13 +264,117 @@ async function takeComputerTurn() {
   game.thinking = false;
   if (!result) { refresh(); return; }      // no moves: the game is already over
 
+  const before = game.position;
   game.position = Rules.makeMove(game.position, result.move);
   game.lastMove = result.move;
-  sound?.forMove(result.move, game.position);
+  announce(before, game.position);
   refresh();
 }
 
-function updateTrays() { /* wired up in Phase 4 */ }
+/* ------------------------------------------------------------------ *
+ * Captured pieces
+ * ------------------------------------------------------------------ */
+
+/** What each side starts with. */
+const FULL_SET = {
+  [Rules.PAWN]: 8, [Rules.KNIGHT]: 2, [Rules.BISHOP]: 2,
+  [Rules.ROOK]: 2, [Rules.QUEEN]: 1,
+};
+const MATERIAL = {
+  [Rules.PAWN]: 1, [Rules.KNIGHT]: 3, [Rules.BISHOP]: 3,
+  [Rules.ROOK]: 5, [Rules.QUEEN]: 9,
+};
+const CAPTURE_ORDER = [Rules.QUEEN, Rules.ROOK, Rules.BISHOP, Rules.KNIGHT, Rules.PAWN];
+
+/**
+ * Work out what has been taken, by comparing the board against a full set.
+ *
+ * Promotion is the wrinkle: a side with two queens has not gained a queen from
+ * nowhere, it has spent a pawn. So every piece above the starting count is
+ * counted back as a pawn that left the board. Doing it this way means the
+ * trays are correct from the position alone, with no history to keep — which
+ * is what makes them survive a refresh in an online game.
+ */
+function capturedPieces(position, colour) {
+  const present = {};
+  for (const sq of Rules.SQUARES) {
+    const piece = position.board[sq];
+    if (piece === 0 || Rules.colourOf(piece) !== colour) continue;
+    const type = Rules.typeOf(piece);
+    present[type] = (present[type] ?? 0) + 1;
+  }
+
+  let promoted = 0;
+  const lost = [];
+  for (const type of CAPTURE_ORDER) {
+    if (type === Rules.PAWN) continue;
+    const extra = (present[type] ?? 0) - FULL_SET[type];
+    if (extra > 0) promoted += extra;
+    for (let i = 0; i < -Math.min(extra, 0); i++) lost.push(type);
+  }
+  const pawnsGone = FULL_SET[Rules.PAWN] - (present[Rules.PAWN] ?? 0) - promoted;
+  for (let i = 0; i < Math.max(0, pawnsGone); i++) lost.push(Rules.PAWN);
+
+  return lost;
+}
+
+/** Material on the board, in pawns. Correct whatever has been promoted. */
+function materialCount(position, colour) {
+  let total = 0;
+  for (const sq of Rules.SQUARES) {
+    const piece = position.board[sq];
+    if (piece === 0 || Rules.colourOf(piece) !== colour) continue;
+    total += MATERIAL[Rules.typeOf(piece)] ?? 0;
+  }
+  return total;
+}
+
+function drawTray(tray, capturedColour, advantage) {
+  const lost = capturedPieces(game.position, capturedColour);
+  if (!lost.length && advantage <= 0) { tray.innerHTML = ''; return; }
+  tray.innerHTML =
+    `<div class="tray">` +
+    lost.map((type) => pieceSVG(type, capturedColour)).join('') +
+    (advantage > 0 ? `<span class="advantage">+${advantage}</span>` : '') +
+    `</div>`;
+}
+
+function updateTrays() {
+  if (!game.position) return;
+  const show = game.mode !== null;
+  ui.trayTop.hidden = !show;
+  ui.trayBottom.hidden = !show;
+  if (!show) return;
+
+  // Whoever is at the bottom of the board sees their own captures below it.
+  const bottom = board.flipped ? Rules.BLACK : Rules.WHITE;
+  const top = Rules.opposite(bottom);
+  const lead = materialCount(game.position, bottom) - materialCount(game.position, top);
+
+  // The top tray holds the pieces the top player has taken, which are the
+  // bottom player's pieces.
+  drawTray(ui.trayTop, bottom, -lead);
+  drawTray(ui.trayBottom, top, lead);
+}
+
+/* ------------------------------------------------------------------ *
+ * Sound
+ * ------------------------------------------------------------------ */
+
+/** Decide which sound a change of position deserves, in any mode. */
+function announce(before, after) {
+  if (!sound || !after) return;
+  const state = Rules.status(after);
+  if (state === 'checkmate' || state === 'stalemate') return sound.play('end');
+  if (state === 'check') return sound.play('check');
+
+  const count = (position) => {
+    let n = 0;
+    for (const sq of Rules.SQUARES) if (position.board[sq] !== 0) n++;
+    return n;
+  };
+  sound.play(before && count(after) < count(before) ? 'capture' : 'move');
+}
 
 /* ------------------------------------------------------------------ *
  * Online
@@ -308,6 +415,7 @@ async function startOnline(code) {
     onState: (state) => {
       // The room's word is final. We draw what we are told, nothing else.
       const incoming = Rules.fromFEN(state.fen);
+      const before = game.position;
       const changed = Rules.toFEN(game.position) !== state.fen;
 
       game.position = incoming;
@@ -321,7 +429,7 @@ async function startOnline(code) {
       game.resigned = state.outcome === 'resigned'
         ? Rules.opposite(state.winner) : null;
 
-      if (changed) sound?.forPosition(incoming);
+      if (changed) announce(before, incoming);
       drawRoomBanner();
       refresh();
     },
@@ -373,6 +481,7 @@ function closeAllOptions() {
 
 for (const button of document.querySelectorAll('.mode')) {
   button.addEventListener('click', () => {
+    loadSound();
     const mode = button.dataset.mode;
     if (mode === 'hotseat') { startGame('hotseat'); return; }
 
@@ -407,6 +516,30 @@ ui.startOnline.addEventListener('click', () => {
 ui.roomCode.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') ui.startOnline.click();
 });
+/* Sound is loaded on the first real interaction — which is both when browsers
+   permit audio to start, and the first moment it could possibly be wanted. */
+async function loadSound() {
+  if (sound) return sound;
+  const { Sound } = await import('./sound.js');
+  sound = new Sound();
+  if (sound.enabled) sound.wake();
+  drawSoundToggle();
+  return sound;
+}
+
+function drawSoundToggle() {
+  const on = sound ? sound.enabled : true;
+  ui.soundToggle.textContent = on ? 'Sound on' : 'Sound off';
+  ui.soundToggle.setAttribute('aria-pressed', String(on));
+}
+
+ui.soundToggle.addEventListener('click', async () => {
+  const s = await loadSound();
+  s.setEnabled(!s.enabled);
+  drawSoundToggle();
+  if (s.enabled) s.play('move');
+});
+
 ui.newGame.addEventListener('click', newGame);
 ui.resign.addEventListener('click', resign);
 ui.toMenu.addEventListener('click', toMenu);
