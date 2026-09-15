@@ -65,6 +65,22 @@ gichess is done when all of this is true:
   Refreshing the page puts you back in the same game in the same seat. "New
   game" resets the board for both players.
 
+Every one of these is true at the address above. The extras — captured pieces,
+sound, and a resign button — are built too.
+
+---
+
+## How to play online with someone
+
+1. Open the link and choose **Online**. A four-letter room code is already
+   filled in for you.
+2. Send that code to whoever you want to play.
+3. They open the same link, choose **Online**, type your code, and press Play.
+
+Whoever arrives first plays White, the second plays Black, and anybody else
+who types the code watches the game live. Refreshing the page puts you straight
+back into your own seat. There is nothing to sign up for and nothing to install.
+
 ---
 
 ## How to run it on your laptop
@@ -123,19 +139,25 @@ gichess/
 ├─ public/                        everything the browser downloads
 │  ├─ index.html                  the one page
 │  ├─ css/gichess.css             the look
-│  ├─ sfx/                        move and capture sounds
 │  └─ js/
 │     ├─ rules.js                 THE RULES. Shared by every mode and the server.
+│     ├─ pieces.js                the gold pieces, drawn as vectors
 │     ├─ board.js                 drawing the board, and picking up pieces
 │     ├─ engine.js                the computer opponent
 │     ├─ online.js                talking to the server
+│     ├─ sound.js                 the knock of a piece going down
 │     └─ app.js                   menus, modes, and glue
 ├─ src/                           everything that runs on Cloudflare
 │  ├─ worker.js                   routes traffic
 │  └─ room.js                     one online game room (a Durable Object)
 └─ test/
-   └─ perft.test.js               the proof that the rules are right
+   ├─ perft.test.js               the proof that the rules are right
+   ├─ rules.test.js               and that they say the right things
+   └─ engine.test.js              the computer opponent
 ```
+
+Fifty automated checks, no runtime dependencies of any kind, and one
+development dependency (`wrangler`, to publish it).
 
 The single most important line in that tree is `public/js/rules.js`. It is the
 only place chess rules are written, it has no dependencies, and it runs
@@ -149,7 +171,9 @@ Accounts or logins · chess clocks · ratings · draw by threefold repetition ·
 the fifty-move rule · opening books · saving or exporting games in PGN ·
 React or any other front-end framework · any third-party chess library.
 
-The rules are written from scratch, by hand, in this repository.
+The rules are written from scratch, by hand, in this repository. There is no
+chess library, no engine library, no Socket.IO, no Express, no `ws`, and no
+build step: the browser loads the JavaScript modules directly.
 
 ---
 

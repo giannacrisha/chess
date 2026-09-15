@@ -191,7 +191,7 @@ correct game of chess on one screen.*
 
 *Goal: a legal, non-random opponent that answers in well under two seconds.*
 
-- [ ] **T2.1 — Judging a position**
+- [x] **T2.1 — Judging a position**
   - Depends on: T1.12
   - Files: `public/js/engine.js`
   - What: the evaluation function — material values plus a piece-square table
@@ -200,7 +200,7 @@ correct game of chess on one screen.*
     roughly +900 for that side; a knight in the centre scores higher than the
     same knight in a corner.
 
-- [ ] **T2.2 — Minimax with alpha–beta pruning, depth 2**
+- [x] **T2.2 — Minimax with alpha–beta pruning, depth 2**
   - Depends on: T2.1
   - Files: `public/js/engine.js`
   - What: search two turns ahead, choosing the move that leaves the position
@@ -212,7 +212,7 @@ correct game of chess on one screen.*
     **under 200ms**, a tenfold margin on the two-second requirement. Pruning is
     proved correct by checking it picks the same move as an unpruned search.
 
-- [ ] **T2.3 — Vs computer mode**
+- [x] **T2.3 — Vs computer mode**
   - Depends on: T2.2
   - Files: `public/js/app.js`, `public/index.html`, `public/css/gichess.css`
   - What: colour choice on the menu (White preselected); the board oriented to
@@ -223,7 +223,7 @@ correct game of chess on one screen.*
     computer reply arrives within two seconds; and the player never gets a turn
     out of order.
 
-- [ ] **T2.4 — Deploy Phase 2**
+- [x] **T2.4 — Deploy Phase 2**
   - Depends on: T2.3
   - Files: —
   - Done when: both modes work at the public address, on a phone and a laptop.
@@ -234,7 +234,7 @@ correct game of chess on one screen.*
 
 *Goal: two people, two devices, one room code, moves live on both.*
 
-- [ ] **T3.1 — Durable Object wiring**
+- [x] **T3.1 — Durable Object wiring**
   - Depends on: T2.4
   - Files: `wrangler.jsonc`
   - What: the `ROOM` binding, the `Room` class, the `new_sqlite_classes`
@@ -242,7 +242,7 @@ correct game of chess on one screen.*
   - Done when: `npx wrangler deploy --dry-run` accepts the configuration, and
     static files still load without the Worker running for them.
 
-- [ ] **T3.2 — Routing**
+- [x] **T3.2 — Routing**
   - Depends on: T3.1
   - Files: `src/worker.js`
   - What: requests to `/ws/<CODE>` go to `env.ROOM.getByName(code)`; everything
@@ -252,7 +252,7 @@ correct game of chess on one screen.*
     always reaches the same room, a different code reaches a different one, and
     an invalid code is refused.
 
-- [ ] **T3.3 — The room: connections, seats, storage**
+- [x] **T3.3 — The room: connections, seats, storage**
   - Depends on: T3.2
   - Files: `src/room.js`
   - What: accept WebSockets with `ctx.acceptWebSocket()`; the two SQLite tables;
@@ -264,7 +264,7 @@ correct game of chess on one screen.*
     moves; and a `grep` for `setTimeout`, `setInterval` and `setAlarm` across
     `src/` returns nothing.
 
-- [ ] **T3.4 — The room as referee**
+- [x] **T3.4 — The room as referee**
   - Depends on: T3.3
   - Files: `src/room.js`
   - What: on a `move` message, check the sender holds the seat whose turn it is
@@ -276,7 +276,7 @@ correct game of chess on one screen.*
     back to the true position — **the server's answer does not depend on the
     browser behaving.**
 
-- [ ] **T3.5 — The online client**
+- [x] **T3.5 — The online client**
   - Depends on: T3.4
   - Files: `public/js/online.js`, `public/js/app.js`
   - What: generate and remember the browser's token; connect; send `move`; draw
@@ -286,14 +286,14 @@ correct game of chess on one screen.*
   - Done when: two devices with the same code see each other's moves within a
     second, and a full legal game can be played end to end.
 
-- [ ] **T3.6 — Rejoining, watching, resetting**
+- [x] **T3.6 — Rejoining, watching, resetting**
   - Depends on: T3.5
   - Files: `public/js/online.js`, `src/room.js`
   - Done when: refreshing either browser mid-game returns it to the same seat
     and the same position; a third person with the code watches live and cannot
     move; and New game resets the board for everyone in the room at once.
 
-- [ ] **T3.7 — Deploy Phase 3**
+- [x] **T3.7 — Deploy Phase 3**
   - Depends on: T3.6
   - Files: `README.md`
   - Done when: a real game is played between two different devices on different
@@ -306,13 +306,13 @@ correct game of chess on one screen.*
 
 *Only once everything above is true.*
 
-- [ ] **T4.1 — Captured pieces**
+- [x] **T4.1 — Captured pieces**
   - Depends on: T3.7
   - Files: `public/js/board.js`, `public/js/app.js`, `public/css/gichess.css`
   - Done when: every capture appears in the right tray in all three modes, the
     material advantage is shown, and New game clears both trays.
 
-- [ ] **T4.2 — Sound**
+- [x] **T4.2 — Sound**
   - Depends on: T4.1
   - Files: `public/sfx/`, `public/js/sound.js`, `public/js/app.js`
   - Done when: move, capture and check each have a distinct sound; a mute
@@ -320,17 +320,47 @@ correct game of chess on one screen.*
     visitor's first interaction with the page; and the game is completely usable
     with sound off.
 
-- [ ] **T4.3 — Resign**
+- [x] **T4.3 — Resign**
   - Depends on: T4.2
   - Files: `public/js/app.js`, `src/room.js`
   - Done when: resigning takes one confirmation, ends the game and names the
     winner; online, both players and any spectators see it immediately.
 
-- [ ] **T4.4 — Final deploy and pass**
+- [x] **T4.4 — Final deploy and pass**
   - Depends on: T4.3
   - Files: `README.md`
   - Done when: every definition of done in this document is true at the public
     address, on a phone and on a laptop, in light and in dark.
+  - **Done. <https://gichess.giannacrisha-ee3.workers.dev>**
+
+---
+
+## Where it ended up
+
+Everything above is built, deployed and verified at
+<https://gichess.giannacrisha-ee3.workers.dev>.
+
+| | |
+|---|---|
+| Automated checks | 50, passing in under 3 seconds |
+| Rules proof | 5 positions, including depth 4 from the start (197,281) |
+| Illegal moves through the UI | 16,128 attempts, 88 accepted — exactly the legal ones |
+| Computer's slowest search | 9ms, against a two-second requirement |
+| Positions pruning skips | 91% |
+| Timers on the server | none |
+| Runtime dependencies | none |
+
+Three things were found by testing rather than by reading, and each is written
+up in the commit that fixed it:
+
+1. **Alpha-beta was doing nothing.** Giving every root move a full window left
+   the pruning with nothing to cut. Caught because the test measured the search
+   against a deliberately slow unpruned reference instead of trusting it.
+2. **The coordinates went stale when the board flipped.** The renderer skips
+   squares whose piece has not changed, and the letters had moved but the
+   pieces had not.
+3. **The server rejected the room code `GOLD`.** The rule that generated codes
+   avoid I and O had been applied to typed codes too.
 
 ---
 
