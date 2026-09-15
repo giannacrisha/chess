@@ -1,0 +1,20 @@
+{
+  // gichess — Cloudflare Workers settings.
+  // See README.md for what each of these words means.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gichess",
+  "compatibility_date": "2026-09-15",
+
+  // Send us the logs, so we can see what happened when something breaks.
+  "observability": {
+    "enabled": true
+  },
+
+  // Everything in public/ is handed straight to the browser by Cloudflare.
+  // "single-page-application" means: whatever address someone asks for,
+  // serve index.html and let the page sort itself out.
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  }
+}

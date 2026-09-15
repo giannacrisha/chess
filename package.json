@@ -1,0 +1,18 @@
+{
+  "name": "gichess",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A browser chess game. Royal, gold, sculpted.",
+  "author": "giannacrisha",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "node --test test/",
+    "deploy": "wrangler deploy",
+    "check": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.132.0"
+  }
+}
