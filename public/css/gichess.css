@@ -297,8 +297,11 @@ button:focus-visible, [tabindex]:focus-visible {
 /* --- The game screen --------------------------------------------------- */
 
 .game {
-  width: 100%;
-  max-width: min(92vw, 640px);
+  /* The board must fit the screen without scrolling, on a short laptop window
+     as well as a tall phone. So it is capped by the viewport HEIGHT too, with
+     room left for the wordmark, the status line and the controls. */
+  width: max(240px, min(92vw, 640px, calc(100vh - 250px)));
+  width: max(240px, min(92vw, 640px, calc(100svh - 250px)));
   display: flex;
   flex-direction: column;
   gap: 10px;

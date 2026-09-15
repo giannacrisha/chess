@@ -1,11 +1,86 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>gichess</title>
+<meta name="description" content="A browser chess game. Royal, gold, sculpted. Play a friend across the table or across the world.">
+<meta name="theme-color" content="#fffdfa">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><text y='36' font-size='38'>&#9819;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/css/gichess.css">
+<script>
+  /* Set the theme before the first paint, so the page never flashes the
+     wrong one. Runs inline on purpose — a separate file would be too late. */
+  try {
+    const saved = localStorage.getItem('gichess-theme');
+    if (saved === 'light' || saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  } catch (e) { /* private browsing: the system setting will do */ }
+</script>
 </head>
 <body>
-<h1>gichess</h1>
+
+<header class="masthead">
+  <h1 class="wordmark">gichess</h1>
+  <button class="btn theme-toggle" id="theme-toggle" aria-label="Switch between light and dark">◑</button>
+</header>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- The menu                                                            -->
+<!-- ------------------------------------------------------------------ -->
+<main class="menu card" id="menu">
+  <p class="menu-lede">Three ways to play.</p>
+
+  <button class="mode" data-mode="hotseat" aria-expanded="false">
+    <span class="mode-name">Hot-seat</span>
+    <span class="mode-note">Two players, one screen.</span>
+  </button>
+
+  <button class="mode" data-mode="computer" aria-expanded="false">
+    <span class="mode-name">Vs computer</span>
+    <span class="mode-note">Play the machine.</span>
+  </button>
+  <div class="mode-options" id="computer-options" hidden>
+    <span class="mode-note">I play</span>
+    <button class="choice" data-colour="w" aria-pressed="true">White</button>
+    <button class="choice" data-colour="b" aria-pressed="false">Black</button>
+    <button class="btn btn-gold" id="start-computer">Start</button>
+  </div>
+
+  <button class="mode" data-mode="online" aria-expanded="false">
+    <span class="mode-name">Online</span>
+    <span class="mode-note">Play someone anywhere. Share a room code.</span>
+  </button>
+  <div class="mode-options" id="online-options" hidden>
+    <label class="visually-hidden" for="room-code">Room code</label>
+    <input class="code-input" id="room-code" maxlength="4" autocomplete="off"
+           autocapitalize="characters" spellcheck="false" inputmode="text">
+    <button class="btn btn-gold" id="start-online">Play</button>
+    <span class="mode-note">Send this code to whoever you want to play.</span>
+  </div>
+</main>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- The game                                                            -->
+<!-- ------------------------------------------------------------------ -->
+<main class="game" id="game" hidden>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <div class="trays" id="tray-top" hidden></div>
+  <div class="board-frame" id="board-frame"></div>
+  <div class="trays" id="tray-bottom" hidden></div>
+
+  <div class="controls">
+    <button class="btn btn-gold" id="new-game">New game</button>
+    <button class="btn btn-danger" id="resign" hidden>Resign</button>
+    <button class="btn" id="sound-toggle" hidden aria-pressed="true">Sound on</button>
+    <button class="btn btn-quiet" id="to-menu">Menu</button>
+  </div>
+</main>
+
+<script type="module" src="/js/app.js"></script>
 </body>
 </html>
