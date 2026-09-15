@@ -29,6 +29,7 @@ const ui = {
   startComputer: document.getElementById('start-computer'),
   startOnline: document.getElementById('start-online'),
   roomCode: document.getElementById('room-code'),
+  roomBanner: document.getElementById('room-banner'),
   trayTop: document.getElementById('tray-top'),
   trayBottom: document.getElementById('tray-bottom'),
 };
@@ -101,8 +102,18 @@ function describe() {
     return { text: `${COLOUR_NAME[turn]} is in check`, tone: 'is-check' };
   }
 
-  if (mode === 'online' && game.online) {
-    return { text: game.online.statusText(turn), tone: '' };
+  if (mode === 'online') {
+    const seat = game.seat;
+    const present = game.present ?? { w: false, b: false };
+    if (seat === 'w' && !present.b) {
+      return { text: `Waiting for an opponent — share the code ${game.code}`, tone: '' };
+    }
+    if (seat === 'b' && !present.w) {
+      return { text: 'Waiting for White to come back', tone: '' };
+    }
+    if (seat === 'spectator') {
+      return { text: `You're watching. ${COLOUR_NAME[turn]} to move.`, tone: '' };
+    }
   }
 
   return { text: `${COLOUR_NAME[turn]} to move`, tone: '' };
@@ -183,6 +194,7 @@ function startGame(mode, options = {}) {
 
   ui.menu.hidden = true;
   ui.game.hidden = false;
+  ui.roomBanner.hidden = true;
 
   board.setFlipped(mode !== 'hotseat' && game.playerColour === Rules.BLACK);
   board.setMovable(mode === 'hotseat' ? 'both' : game.playerColour);
@@ -197,6 +209,7 @@ function toMenu() {
   game.online?.close?.();
   game.online = null;
   game.mode = null;
+  ui.roomBanner.hidden = true;
   ui.game.hidden = true;
   ui.menu.hidden = false;
   closeAllOptions();
@@ -257,6 +270,94 @@ async function takeComputerTurn() {
 function updateTrays() { /* wired up in Phase 4 */ }
 
 /* ------------------------------------------------------------------ *
+ * Online
+ * ------------------------------------------------------------------ */
+
+async function startOnline(code) {
+  const { OnlineGame } = await import('./online.js');
+
+  game.mode = 'online';
+  game.code = code;
+  game.seat = null;
+  game.present = { w: false, b: false, watching: 0 };
+  game.connected = false;
+  game.position = Rules.newGame();
+  game.lastMove = null;
+  game.resigned = null;
+  game.thinking = false;
+  game.token = Symbol('online');
+  game.resignable = false;          // until we know we hold a seat
+
+  ui.menu.hidden = true;
+  ui.game.hidden = false;
+  ui.roomBanner.hidden = false;
+  board.setMovable(null);           // nothing moves until the room seats us
+  refresh({ animate: false });
+
+  game.online = new OnlineGame(code, {
+    onSeated: (role) => {
+      game.seat = role;
+      game.playerColour = role === 'b' ? Rules.BLACK : Rules.WHITE;
+      game.resignable = role === 'w' || role === 'b';
+      board.setFlipped(role === 'b');
+      board.setMovable(role === 'spectator' ? null : role);
+      drawRoomBanner();
+      refresh({ animate: false });
+    },
+
+    onState: (state) => {
+      // The room's word is final. We draw what we are told, nothing else.
+      const incoming = Rules.fromFEN(state.fen);
+      const changed = Rules.toFEN(game.position) !== state.fen;
+
+      game.position = incoming;
+      game.present = state.present;
+      // The board only needs the two squares, to highlight them and to slide
+      // the piece across.
+      game.lastMove = state.lastMove ? {
+        from: Rules.squareOf(state.lastMove.from),
+        to: Rules.squareOf(state.lastMove.to),
+      } : null;
+      game.resigned = state.outcome === 'resigned'
+        ? Rules.opposite(state.winner) : null;
+
+      if (changed) sound?.forPosition(incoming);
+      drawRoomBanner();
+      refresh();
+    },
+
+    onRejected: (reason) => {
+      // Nothing to show. The room sends the true position immediately after
+      // any refusal, so the board has already corrected itself by the time
+      // this runs. A legitimate client cannot send an illegal move anyway —
+      // the only ways here are a tampered browser, or a genuine race where
+      // your opponent's move landed first, and silently snapping back is the
+      // right answer to both.
+      console.debug('gichess: the room said no —', reason);
+    },
+
+    onConnection: (up) => {
+      game.connected = up;
+      drawRoomBanner();
+    },
+  });
+}
+
+const SEAT_NAME = { w: 'You are White', b: 'You are Black', spectator: 'You are watching' };
+
+function drawRoomBanner() {
+  if (game.mode !== 'online') { ui.roomBanner.hidden = true; return; }
+  const seat = game.seat ? SEAT_NAME[game.seat] : 'Joining…';
+  const others = game.present?.watching
+    ? ` · ${game.present.watching} watching` : '';
+  ui.roomBanner.innerHTML =
+    `<span>Room <b class="room-code">${game.code}</b></span>` +
+    `<span class="seat">${seat}</span>` +
+    (others ? `<span>${others}</span>` : '') +
+    (game.connected ? '' : '<span class="offline">Reconnecting…</span>');
+}
+
+/* ------------------------------------------------------------------ *
  * The menu
  * ------------------------------------------------------------------ */
 
@@ -298,6 +399,14 @@ for (const choice of ui.computerOptions.querySelectorAll('.choice')) {
 }
 
 ui.startComputer.addEventListener('click', () => startGame('computer', { colour: chosenColour }));
+ui.startOnline.addEventListener('click', () => {
+  const code = tidyCode(ui.roomCode.value);
+  if (code.length !== 4) { ui.roomCode.focus(); return; }
+  startOnline(code);
+});
+ui.roomCode.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') ui.startOnline.click();
+});
 ui.newGame.addEventListener('click', newGame);
 ui.resign.addEventListener('click', resign);
 ui.toMenu.addEventListener('click', toMenu);
@@ -306,6 +415,8 @@ ui.toMenu.addEventListener('click', toMenu);
  * Room codes — four letters, none of them easily mistaken for another
  * ------------------------------------------------------------------ */
 
+// Codes we generate avoid I and O, which are easily misread. Codes people
+// type are accepted as typed — see the note in src/worker.js.
 export const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';   // no I, no O
 
 export function randomCode() {
